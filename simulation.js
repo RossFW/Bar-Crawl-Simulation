@@ -47,6 +47,18 @@ function formatMin(m) {
   return `${Math.floor(t / 60)}h ${t % 60}m`;
 }
 
+// Format sim minutes as real time of day (crawl starts at 3:00 PM)
+function formatTime(m) {
+  if (m === null || m === undefined || isNaN(m)) return '—';
+  const totalMin = Math.round(m);
+  let hour = 15 + Math.floor(totalMin / 60); // 15 = 3 PM
+  const min = totalMin % 60;
+  const ampm = hour >= 24 ? 'AM' : (hour >= 12 ? 'PM' : 'AM');
+  hour = hour % 24;
+  const h12 = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
+  return `${h12}:${String(min).padStart(2, '0')} ${ampm}`;
+}
+
 function pickRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -571,10 +583,13 @@ function updateStats() {
   const found = Sim.groups.filter(g => g.phase === 'found').length;
   const total = Sim.groups.length;
 
-  document.getElementById('stat-time').textContent = formatMin(Sim.simMinute);
+  document.getElementById('stat-time').textContent = formatTime(Sim.simMinute);
   document.getElementById('stat-found').textContent = `${found} / ${total}`;
-  document.getElementById('stat-first').textContent = formatMin(Sim.firstDiscovery);
-  document.getElementById('stat-allfound').textContent = formatMin(Sim.allFoundTime);
+  document.getElementById('stat-first').textContent = formatTime(Sim.firstDiscovery);
+  document.getElementById('stat-allfound').textContent = formatTime(Sim.allFoundTime);
+  document.getElementById('stat-last').textContent = Sim.discoveryTimes.length > 0
+    ? formatTime(Math.max(...Sim.discoveryTimes))
+    : '—';
 
   if (Sim.discoveryTimes.length > 0) {
     const sorted = [...Sim.discoveryTimes].sort((a, b) => a - b);
@@ -582,7 +597,7 @@ function updateStats() {
     const median = sorted.length % 2 === 0
       ? (sorted[mid - 1] + sorted[mid]) / 2
       : sorted[mid];
-    document.getElementById('stat-median').textContent = formatMin(median);
+    document.getElementById('stat-median').textContent = formatTime(median);
   } else {
     document.getElementById('stat-median').textContent = '—';
   }
@@ -752,10 +767,11 @@ function resetSim() {
   document.getElementById('progress-bar').style.width = '0%';
   document.getElementById('app').classList.remove('sim-complete');
 
-  document.getElementById('stat-time').textContent    = '0:00';
+  document.getElementById('stat-time').textContent    = '3:00 PM';
   document.getElementById('stat-found').textContent   = '0 / 0';
   document.getElementById('stat-first').textContent   = '—';
   document.getElementById('stat-allfound').textContent = '—';
+  document.getElementById('stat-last').textContent    = '—';
   document.getElementById('stat-median').textContent  = '—';
 
   rebuildHistogram();

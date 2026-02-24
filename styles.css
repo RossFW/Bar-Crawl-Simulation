@@ -307,8 +307,8 @@ select:disabled { opacity: 0.35; cursor: not-allowed; }
 }
 
 #map-container {
-  height: clamp(350px, 55vh, 600px);
-  flex-shrink: 0;
+  flex: 1;
+  min-height: 300px;
   position: relative;
   border-bottom: 2px solid #FFD70022;
 }
@@ -353,11 +353,11 @@ select:disabled { opacity: 0.35; cursor: not-allowed; }
 
 /* ---- Bottom Panel ---- */
 #bottom-panel {
-  flex: 1;
   display: flex;
   gap: 12px;
-  padding: 12px 16px;
-  min-height: 180px;
+  padding: 8px 16px;
+  height: 150px;
+  flex-shrink: 0;
   background: #1a1018;
 }
 
