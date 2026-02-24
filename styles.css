@@ -544,3 +544,152 @@ details li {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #3d2e20; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #5a4a3a; }
+
+/* ============================================================
+   Mobile Responsive — stack everything vertically
+   ============================================================ */
+@media (max-width: 768px) {
+
+  /* Header: wrap and shrink */
+  header {
+    flex-wrap: wrap;
+    padding: 10px 14px;
+    gap: 4px 10px;
+  }
+
+  header h1 {
+    font-size: 1.1rem;
+    width: 100%;
+  }
+
+  header .subtitle {
+    font-size: 0.7rem;
+  }
+
+  /* Main layout: single column, natural flow */
+  #main-layout {
+    grid-template-columns: 1fr;
+  }
+
+  /* Controls: horizontal strip instead of tall sidebar */
+  #controls {
+    border-right: none;
+    border-bottom: 1px solid #3d2e20;
+    padding: 10px 14px;
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  /* Run buttons: sticky at top of controls for easy access */
+  #run-controls {
+    padding: 8px 0 4px;
+  }
+
+  .btn-primary, .btn-secondary {
+    padding: 12px 14px;
+    font-size: 1rem;
+  }
+
+  /* Larger touch targets for sliders */
+  input[type="range"] {
+    height: 6px;
+    margin-top: 8px;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    width: 20px;
+    height: 20px;
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Content: no min-height constraint on mobile */
+  #content {
+    min-height: auto;
+  }
+
+  /* Map: fixed reasonable height */
+  #map-container {
+    min-height: 280px;
+    height: 45vh;
+    flex: none;
+  }
+
+  /* Bottom panel: vertical stack */
+  #bottom-panel {
+    flex-direction: column;
+    height: auto;
+    padding: 10px 14px;
+    gap: 10px;
+  }
+
+  /* Charts: stack vertically */
+  #charts-col {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  #drinks-wrapper,
+  #histogram-wrapper {
+    min-height: 160px;
+  }
+
+  #drinks-canvas-wrapper,
+  #histogram-canvas-wrapper {
+    min-height: 140px;
+  }
+
+  /* Right col (legend + assumptions): full width, side by side */
+  #right-col {
+    width: 100%;
+    flex-direction: row;
+    gap: 10px;
+  }
+
+  #legend {
+    flex: 1;
+  }
+
+  #assumptions {
+    flex: 1;
+  }
+
+  /* Legend items: compact horizontal flow */
+  .legend-item {
+    font-size: 0.72rem;
+    margin-bottom: 5px;
+  }
+
+  /* Stats panel: 2-column grid */
+  .stat-row {
+    font-size: 0.78rem;
+  }
+
+  /* Select dropdown: larger for touch */
+  select {
+    padding: 10px 12px;
+    font-size: 0.85rem;
+  }
+}
+
+/* Extra small screens (< 400px) */
+@media (max-width: 400px) {
+  header h1 {
+    font-size: 0.95rem;
+  }
+
+  #sim-status {
+    font-size: 0.68rem;
+  }
+
+  header .subtitle {
+    font-size: 0.62rem;
+  }
+
+  #right-col {
+    flex-direction: column;
+  }
+}
