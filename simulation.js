@@ -273,8 +273,8 @@ function createGroups() {
     // Small arrival delay for staggering (most arrive within first few minutes)
     const arrivalMinute = clamp(gaussianSample(5, 8), 0, 30);
 
-    // Distribute groups across bars 0-4 with a bell curve centered on bar 1-2
-    const startBar = clamp(Math.round(gaussianSample(1.5, 1.3)), 0, Math.min(4, BARS.length - 1));
+    // Uniform random starting bar across all 7 bars
+    const startBar = Math.floor(Math.random() * BARS.length);
 
     // Jitter offset so co-located groups don't stack perfectly
     const jR = (id % 3 - 1) * 0.00018;
