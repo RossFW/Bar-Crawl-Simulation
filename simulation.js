@@ -87,6 +87,9 @@ const Sim = {
   histDirty: false,
   discoveryTimes: [],
 
+  drinksChart: null,
+  drinksDirty: false,
+
   firstDiscovery: null,
   allFoundTime: null,
 
@@ -244,6 +247,82 @@ function rebuildHistogram() {
   Sim.histDirty = false;
 }
 
+// ---- Drinks Chart Initialization ----------------------------
+function initDrinksChart() {
+  const canvas = document.getElementById('drinks-canvas');
+  const wrapper = document.getElementById('drinks-canvas-wrapper');
+  canvas.height = wrapper.clientHeight - 20 || 120;
+
+  const ctx = canvas.getContext('2d');
+  Sim.drinksChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['0', '1', '2', '3', '4', '5', '6+'],
+      datasets: [{
+        label: 'Groups',
+        data: new Array(7).fill(0),
+        backgroundColor: '#FFD70099',
+        borderColor: '#FFD700',
+        borderWidth: 1.5,
+        borderRadius: 3,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 0 },
+      scales: {
+        x: {
+          title: { display: true, text: 'Drinks per person', color: '#8a7a6a', font: { size: 11 } },
+          ticks: { color: '#8a7a6a', font: { size: 10 } },
+          grid: { color: '#2d2420' },
+        },
+        y: {
+          title: { display: true, text: 'Groups', color: '#8a7a6a', font: { size: 11 } },
+          beginAtZero: true,
+          ticks: { stepSize: 1, color: '#8a7a6a', font: { size: 10 } },
+          grid: { color: '#2d2420' },
+        },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1f1a28',
+          borderColor: '#3d2e20',
+          borderWidth: 1,
+          titleColor: '#e8dfd0',
+          bodyColor: '#c4b8a8',
+          callbacks: {
+            title: (items) => `${items[0].label} drinks`,
+            label: (ctx) => ` ${ctx.raw} group${ctx.raw !== 1 ? 's' : ''}`,
+          },
+        },
+      },
+    },
+  });
+}
+
+function computeDrinks(dwellMinutes) {
+  // ~1 drink per 40 min, minimum 1 if they dwelled at all, cap at 6
+  if (dwellMinutes <= 0) return 0;
+  return Math.min(Math.floor(dwellMinutes / 40) + 1, 6);
+}
+
+function rebuildDrinksChart() {
+  // Buckets: 0, 1, 2, 3, 4, 5, 6+ drinks
+  const counts = new Array(7).fill(0);
+  for (const g of Sim.groups) {
+    const drinks = g.drinksAtFound !== null
+      ? g.drinksAtFound
+      : computeDrinks(g.totalNonHostDwellTime);
+    const bucket = Math.min(drinks, 6);
+    counts[bucket]++;
+  }
+  Sim.drinksChart.data.datasets[0].data = counts;
+  Sim.drinksChart.update('none');
+  Sim.drinksDirty = false;
+}
+
 // ---- Group Placement ----------------------------------------
 function assignGroupSizes(totalAttendees, numGroups) {
   const effective = Math.max(totalAttendees, numGroups);
@@ -321,6 +400,8 @@ function createGroups() {
       deducedHostBar: null,   // set when deduced via elimination
       foundAtMinute: null,
       knownClearBars: new Set(), // bars this group knows the host is NOT at
+      totalNonHostDwellTime: 0,  // cumulative minutes spent dwelling at non-host bars
+      drinksAtFound: null,       // frozen drink count when found
       currentLat: startLat,
       currentLng: startLng,
       leafletMarker: marker,
@@ -405,8 +486,10 @@ function markFound(g, t) {
   g.phase = 'found';
   g.foundAtMinute = t;
   g.currentBarIndex = Sim.hostBarIndex;
+  g.drinksAtFound = computeDrinks(g.totalNonHostDwellTime);
   Sim.discoveryTimes.push(t);
   Sim.histDirty = true;
+  Sim.drinksDirty = true;
   if (Sim.firstDiscovery === null) Sim.firstDiscovery = t;
 }
 
@@ -656,6 +739,7 @@ function checkTermination() {
     document.getElementById('btn-run').disabled = false;
     updateStats();
     if (Sim.histDirty) rebuildHistogram();
+    if (Sim.drinksDirty) rebuildDrinksChart();
 
     if (allFound) {
       launchCelebration();
@@ -684,6 +768,14 @@ function animLoop(timestamp) {
     updateGroup(g, Sim.simMinute);
   }
 
+  // Accumulate dwell time at non-host bars for drink tracking
+  for (const g of Sim.groups) {
+    if (g.phase === 'dwelling' && g.currentBarIndex !== Sim.hostBarIndex) {
+      g.totalNonHostDwellTime += deltaSimMin;
+      Sim.drinksDirty = true;
+    }
+  }
+
   updateMarkerPositions();
 
   resolveBarSharing();
@@ -695,6 +787,7 @@ function animLoop(timestamp) {
 
   updateStats();
   if (Sim.histDirty) rebuildHistogram();
+  if (Sim.drinksDirty) rebuildDrinksChart();
 
   checkTermination();
 
@@ -724,6 +817,7 @@ function startSim() {
   Sim.histDirty       = false;
 
   rebuildHistogram();
+  rebuildDrinksChart();
   clearGroupMarkers();
   updateBarMarkers(Sim.hostBarIndex);
 
@@ -775,6 +869,7 @@ function resetSim() {
   document.getElementById('stat-median').textContent  = '—';
 
   rebuildHistogram();
+  rebuildDrinksChart();
 }
 
 // ---- Slider Bindings ---------------------------------------
@@ -817,6 +912,7 @@ function syncDerived() {
 document.addEventListener('DOMContentLoaded', () => {
   initMap();
   initChart();
+  initDrinksChart();
   bindSliders();
   syncDerived();
   updateBarMarkers(-1);

@@ -356,11 +356,19 @@ select:disabled { opacity: 0.35; cursor: not-allowed; }
   display: flex;
   gap: 12px;
   padding: 8px 16px;
-  height: 150px;
+  height: 240px;
   flex-shrink: 0;
   background: #1a1018;
 }
 
+#charts-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 8px;
+}
+
+#drinks-wrapper,
 #histogram-wrapper {
   flex: 1;
   min-width: 0;
@@ -368,21 +376,23 @@ select:disabled { opacity: 0.35; cursor: not-allowed; }
   flex-direction: column;
 }
 
+#drinks-wrapper h3,
 #histogram-wrapper h3 {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   color: #9a8a7a;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 
+#drinks-canvas-wrapper,
 #histogram-canvas-wrapper {
   flex: 1;
   background: #241e18;
   border-radius: 8px;
   border: 1px solid #2d2420;
-  padding: 10px;
+  padding: 8px;
   min-height: 0;
   position: relative;
 }
