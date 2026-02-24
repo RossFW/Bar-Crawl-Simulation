@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Where's the Host? — Bar Crawl ABM</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+  <!-- App styles -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- Top progress bar -->
+    <div id="progress-bar-container">
+      <div id="progress-bar"></div>
+    </div>
+
+    <!-- Header -->
+    <header>
+      <h1>Where's the Host? <span id="sim-status">— Ready</span></h1>
+      <span class="subtitle">Atlanta · Inman Park → Old Fourth Ward · 7 bars · 1.2 mi</span>
+    </header>
+
+    <!-- Main grid: sidebar + content -->
+    <div id="main-layout">
+
+      <!-- ======== Left Sidebar: Controls ======== -->
+      <aside id="controls">
+
+        <!-- Attendees -->
+        <div class="control-group">
+          <h3>Attendees</h3>
+
+          <label>
+            Total Attendees <span class="val" id="attendees-val">30</span>
+            <input type="range" id="attendees" min="4" max="80" value="30" />
+          </label>
+
+          <label>
+            Number of Groups <span class="val" id="groups-val">12</span>
+            <input type="range" id="num-groups" min="2" max="25" value="12" />
+          </label>
+
+          <p class="hint">Avg group size: <span id="avg-size">2.5</span> people</p>
+        </div>
+
+        <!-- Behavior -->
+        <div class="control-group">
+          <h3>Behavior</h3>
+
+          <label>
+            Mean Drink Time <span class="val" id="dwell-val">25</span> min
+            <input type="range" id="dwell-time" min="5" max="60" value="25" />
+          </label>
+
+          <label>
+            Skip-a-Bar Chance <span class="val" id="skip-val">10</span>%
+            <input type="range" id="skip-prob" min="0" max="50" value="10" />
+          </label>
+
+          <label>
+            Recognition Rate <span class="val" id="recog-val">75</span>%
+            <input type="range" id="recog-prob" min="0" max="100" value="75" />
+          </label>
+          <p class="hint">Chance two groups recognize each other &amp; share intel (at bars or passing on walks)</p>
+        </div>
+
+        <!-- Host Location -->
+        <div class="control-group">
+          <h3>Host Location</h3>
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="random-host" checked />
+            <label for="random-host" style="margin:0;cursor:pointer;">Randomize each run</label>
+          </div>
+
+          <select id="host-bar-picker" disabled>
+            <option value="0">1. Victory Sandwich Bar</option>
+            <option value="1">2. Painted Park</option>
+            <option value="2">3. Ladybird Grove &amp; Mess Hall</option>
+            <option value="3">4. Brewdog Atlanta</option>
+            <option value="4">5. Pour Taproom-Beltline</option>
+            <option value="5">6. Guac y Margys</option>
+            <option value="6">7. Duke's Hideaway at McCray's</option>
+          </select>
+
+          <p class="hint" style="margin-top:8px;">
+            Hiding at: <strong id="host-display-text">—</strong>
+          </p>
+        </div>
+
+        <!-- Speed -->
+        <div class="control-group">
+          <h3>Animation Speed</h3>
+
+          <label>
+            Speed <span class="val" id="speed-val">10</span>× real time
+            <input type="range" id="speed" min="1" max="60" value="10" />
+          </label>
+
+          <p class="hint">1 sim-min = <span id="speed-hint">6.0</span>s real</p>
+        </div>
+
+        <!-- Buttons -->
+        <div id="run-controls">
+          <button class="btn-primary" id="btn-run">▶ Run</button>
+          <button class="btn-secondary" id="btn-reset">↺ Reset</button>
+        </div>
+
+        <!-- Stats -->
+        <div id="stats-panel">
+          <h3>Live Stats</h3>
+          <div class="stat-row">
+            <span>Sim time</span>
+            <span class="stat-val" id="stat-time">0:00</span>
+          </div>
+          <div class="stat-row">
+            <span>Groups found</span>
+            <span class="stat-val" id="stat-found">0 / 0</span>
+          </div>
+          <div class="stat-row">
+            <span>First discovery</span>
+            <span class="stat-val" id="stat-first">—</span>
+          </div>
+          <div class="stat-row">
+            <span>All found</span>
+            <span class="stat-val" id="stat-allfound">—</span>
+          </div>
+          <div class="stat-row">
+            <span>Median time</span>
+            <span class="stat-val" id="stat-median">—</span>
+          </div>
+        </div>
+
+      </aside><!-- end #controls -->
+
+      <!-- ======== Right Content: Map + Charts ======== -->
+      <main id="content">
+
+        <!-- Leaflet map -->
+        <div id="map-container"></div>
+
+        <!-- Bottom: histogram + legend + assumptions -->
+        <div id="bottom-panel">
+
+          <div id="histogram-wrapper">
+            <h3>Discovery Time Distribution</h3>
+            <div id="histogram-canvas-wrapper">
+              <canvas id="histogram-canvas"></canvas>
+            </div>
+          </div>
+
+          <div id="right-col">
+
+            <div id="legend">
+              <h3>Legend</h3>
+              <div class="legend-item">
+                <span class="dot dot-waiting"></span> Waiting / en route
+              </div>
+              <div class="legend-item">
+                <span class="dot dot-searching"></span> Searching bars
+              </div>
+              <div class="legend-item">
+                <span class="dot dot-tipped"></span> Got a tip!
+              </div>
+              <div class="legend-item">
+                <span class="dot dot-found"></span> Found the host
+              </div>
+              <div class="legend-item">
+                <span class="dot dot-host"></span> Host bar
+              </div>
+            </div>
+
+            <div id="assumptions">
+              <details>
+                <summary>Model Assumptions</summary>
+                <ol>
+                  <li>Groups always travel bar 1 → 7; no backtracking.</li>
+                  <li>Late arrivers placed at whichever bar they'd have reached walking from bar 1.</li>
+                  <li>Dwell time ~ Normal(mean, σ=8 min), min 5 min.</li>
+                  <li>At each departure, ~skip% chance to jump an extra bar (max 2).</li>
+                  <li>Info shared only when two+ groups are dwelling at the same bar simultaneously.</li>
+                  <li>Once tipped off, a group walks directly to host bar (skips everything in between).</li>
+                  <li>Host is stationary at one bar for the full simulation.</li>
+                  <li>Groups never split or merge.</li>
+                  <li>Simulation ends at 180 min or when all groups are found.</li>
+                  <li>Walking times between bars are fixed estimates from Google Maps.</li>
+                </ol>
+              </details>
+            </div>
+
+          </div><!-- end #right-col -->
+
+        </div><!-- end #bottom-panel -->
+
+      </main><!-- end #content -->
+
+    </div><!-- end #main-layout -->
+
+  </div><!-- end #app -->
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/WLcE=" crossorigin=""></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <!-- Simulation -->
+  <script src="simulation.js"></script>
+</body>
+</html>
