@@ -1,5 +1,5 @@
 // ============================================================
-//  Bar Crawl Finder — Agent-Based Model Simulation
+//  🍌 Where's the Host? — Banana Beltline Bar Crawl ABM
 //  Atlanta · Inman Park → Old Fourth Ward · 7 bars
 // ============================================================
 
@@ -18,12 +18,12 @@ const BARS = [
   { id: 6, name: "Duke's Hideaway at McCray's", lat: 33.7462, lng: -84.3658, travelToNext: 0  },
 ];
 
-// Precompute cumulative walking time between any two bars (forward direction)
+// Precompute cumulative walking time between any two bars (both directions)
 const TRAVEL_TIME = Array(7).fill(null).map(() => Array(7).fill(0));
 for (let i = 0; i < 7; i++) {
   for (let j = i + 1; j < 7; j++) {
     TRAVEL_TIME[i][j] = BARS.slice(i, j).reduce((s, b) => s + b.travelToNext, 0);
-    TRAVEL_TIME[j][i] = TRAVEL_TIME[i][j]; // symmetric storage; logic only uses forward
+    TRAVEL_TIME[j][i] = TRAVEL_TIME[i][j]; // symmetric — enables backtracking
   }
 }
 
@@ -59,7 +59,7 @@ const Sim = {
   skipProb: 0.10,
   recogProb: 0.75,
   hostBarIndex: null,
-  speedMultiplier: 10, // sim-minutes per real-second
+  speedMultiplier: 10,
 
   // Runtime
   simMinute: 0,
@@ -83,7 +83,7 @@ const Sim = {
   firstDiscovery: null,
   allFoundTime: null,
 
-  MAX_SIM_MINUTES: 180,
+  MAX_SIM_MINUTES: 300,
 };
 
 // ---- Map Initialization ------------------------------------
@@ -93,7 +93,8 @@ function initMap() {
   Sim.map = L.map('map-container', {
     zoomControl: true,
     attributionControl: true,
-    preferCanvas: true, // faster rendering for many markers
+    preferCanvas: true,
+    minZoom: 13,
   });
 
   // CartoDB Dark Matter — no API key required
@@ -108,12 +109,12 @@ function initMap() {
     }
   ).addTo(Sim.map);
 
-  // Dashed route polyline
+  // Dashed route polyline — warm gold
   L.polyline(BARS.map(b => [b.lat, b.lng]), {
-    color: '#4b5569',
-    weight: 2.5,
-    dashArray: '5 5',
-    opacity: 0.6,
+    color: '#FFD70066',
+    weight: 3,
+    dashArray: '6 6',
+    opacity: 0.8,
   }).addTo(Sim.map);
 
   // Numbered bar markers (static)
@@ -129,12 +130,18 @@ function initMap() {
     return marker;
   });
 
-  // Fit to bar bounds with padding
+  // Fit to bar bounds with generous padding
   const bounds = L.latLngBounds(BARS.map(b => [b.lat, b.lng]));
-  Sim.map.fitBounds(bounds, { padding: [50, 50] });
+  Sim.map.fitBounds(bounds, { padding: [60, 60] });
 
-  // Ensure tiles render after grid/flex layout settles
-  setTimeout(() => { Sim.map.invalidateSize(); Sim.map.fitBounds(bounds, { padding: [50, 50] }); }, 200);
+  // Ensure tiles render after grid/flex layout settles + zoom in enough
+  setTimeout(() => {
+    Sim.map.invalidateSize();
+    Sim.map.fitBounds(bounds, { padding: [60, 60] });
+    if (Sim.map.getZoom() < 14) {
+      Sim.map.setZoom(14);
+    }
+  }, 200);
 }
 
 function makeBarIcon(idx, isHost) {
@@ -143,7 +150,7 @@ function makeBarIcon(idx, isHost) {
       className: '',
       html: `<div class="host-pulse-wrapper">
                <div class="host-pulse-ring"></div>
-               <div class="host-pulse-dot"></div>
+               <div class="host-pulse-dot">🍌</div>
              </div>`,
       iconSize: [40, 40],
       iconAnchor: [20, 20],
@@ -152,14 +159,14 @@ function makeBarIcon(idx, isHost) {
   return L.divIcon({
     className: '',
     html: `<div style="
-      width:26px;height:26px;border-radius:50%;
-      background:#1c1f35;border:2px solid #3b4068;
-      color:#8892b8;font-size:11px;font-weight:700;
+      width:28px;height:28px;border-radius:50%;
+      background:#241e18;border:2px solid #FFD70088;
+      color:#FFD700;font-size:12px;font-weight:700;
       display:flex;align-items:center;justify-content:center;
-      box-shadow:0 2px 8px rgba(0,0,0,0.6);
-      font-family:system-ui,sans-serif;">${idx + 1}</div>`,
-    iconSize: [26, 26],
-    iconAnchor: [13, 13],
+      box-shadow:0 2px 8px rgba(0,0,0,0.6), 0 0 6px #FFD70033;
+      font-family:'Fredoka',system-ui,sans-serif;">${idx + 1}</div>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
   });
 }
 
@@ -179,12 +186,12 @@ function initChart() {
   Sim.histChart = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: Array.from({ length: 18 }, (_, i) => `${i * 10}`),
+      labels: Array.from({ length: 30 }, (_, i) => `${i * 10}`),
       datasets: [{
         label: 'Groups found',
-        data: new Array(18).fill(0),
-        backgroundColor: '#22c55e99',
-        borderColor: '#22c55e',
+        data: new Array(30).fill(0),
+        backgroundColor: '#32CD3299',
+        borderColor: '#32CD32',
         borderWidth: 1.5,
         borderRadius: 3,
       }],
@@ -195,25 +202,25 @@ function initChart() {
       animation: { duration: 0 },
       scales: {
         x: {
-          title: { display: true, text: 'Discovery time (sim minutes)', color: '#4a5278', font: { size: 11 } },
-          ticks: { color: '#4a5278', font: { size: 10 }, maxRotation: 0 },
-          grid: { color: '#1c1f35' },
+          title: { display: true, text: 'Discovery time (sim minutes)', color: '#8a7a6a', font: { size: 11 } },
+          ticks: { color: '#8a7a6a', font: { size: 10 }, maxRotation: 0 },
+          grid: { color: '#2d2420' },
         },
         y: {
-          title: { display: true, text: 'Groups', color: '#4a5278', font: { size: 11 } },
+          title: { display: true, text: 'Groups', color: '#8a7a6a', font: { size: 11 } },
           beginAtZero: true,
-          ticks: { stepSize: 1, color: '#4a5278', font: { size: 10 } },
-          grid: { color: '#1c1f35' },
+          ticks: { stepSize: 1, color: '#8a7a6a', font: { size: 10 } },
+          grid: { color: '#2d2420' },
         },
       },
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: '#13162a',
-          borderColor: '#252b4a',
+          backgroundColor: '#1f1a28',
+          borderColor: '#3d2e20',
           borderWidth: 1,
-          titleColor: '#d4d8f0',
-          bodyColor: '#9ba3cc',
+          titleColor: '#e8dfd0',
+          bodyColor: '#c4b8a8',
           callbacks: {
             title: (items) => `${items[0].label}–${parseInt(items[0].label) + 10} min`,
             label: (ctx) => ` ${ctx.raw} group${ctx.raw !== 1 ? 's' : ''} discovered`,
@@ -225,9 +232,9 @@ function initChart() {
 }
 
 function rebuildHistogram() {
-  const counts = new Array(18).fill(0);
+  const counts = new Array(30).fill(0);
   for (const t of Sim.discoveryTimes) {
-    const bin = clamp(Math.floor(t / 10), 0, 17);
+    const bin = clamp(Math.floor(t / 10), 0, 29);
     counts[bin]++;
   }
   Sim.histChart.data.datasets[0].data = counts;
@@ -236,20 +243,8 @@ function rebuildHistogram() {
 }
 
 // ---- Group Placement ----------------------------------------
-// Where would someone be if they started walking from bar 0 at t=0
-// and arrived at the crawl at `arrivalMinute`?
-function computeStartingBar(arrivalMinute) {
-  let cumTime = 0;
-  for (let i = 0; i < BARS.length - 1; i++) {
-    const nextCum = cumTime + BARS[i].travelToNext;
-    if (arrivalMinute < nextCum) return i;
-    cumTime = nextCum;
-  }
-  return BARS.length - 1;
-}
-
 function assignGroupSizes(totalAttendees, numGroups) {
-  const effective = Math.max(totalAttendees, numGroups); // min 1 per group
+  const effective = Math.max(totalAttendees, numGroups);
   const base = Math.floor(effective / numGroups);
   const rem = effective % numGroups;
   return Array(numGroups).fill(base).map((s, i) => s + (i < rem ? 1 : 0));
@@ -257,10 +252,10 @@ function assignGroupSizes(totalAttendees, numGroups) {
 
 // ---- Group Colors ------------------------------------------
 const COLORS = {
-  waiting:   '#6b7280',
-  searching: '#3b82f6',
-  tipped:    '#f59e0b',
-  found:     '#22c55e',
+  waiting:   '#8B7355',
+  searching: '#FF8C00',
+  tipped:    '#FFD700',
+  found:     '#32CD32',
 };
 
 function groupColor(g) {
@@ -275,8 +270,11 @@ function createGroups() {
   const sizes = assignGroupSizes(Sim.totalAttendees, Sim.numGroups);
 
   Sim.groups = sizes.map((size, id) => {
-    const arrivalMinute = clamp(gaussianSample(10, 15), 0, 60);
-    const startBar = computeStartingBar(arrivalMinute);
+    // Small arrival delay for staggering (most arrive within first few minutes)
+    const arrivalMinute = clamp(gaussianSample(5, 8), 0, 30);
+
+    // Distribute groups across bars 0-4 with a bell curve centered on bar 1-2
+    const startBar = clamp(Math.round(gaussianSample(1.5, 1.3)), 0, Math.min(4, BARS.length - 1));
 
     // Jitter offset so co-located groups don't stack perfectly
     const jR = (id % 3 - 1) * 0.00018;
@@ -287,7 +285,7 @@ function createGroups() {
     const marker = L.circleMarker([startLat, startLng], {
       radius: 4 + Math.ceil(size / 2),
       fillColor: COLORS.waiting,
-      color: '#fff',
+      color: '#FFD70088',
       weight: 1.5,
       fillOpacity: 0.9,
       opacity: 0.9,
@@ -298,7 +296,7 @@ function createGroups() {
       id,
       size,
       arrivalMinute,
-      phase: 'waiting', // waiting | dwelling | traveling | found
+      phase: 'waiting',
       currentBarIndex: startBar,
       departureBarIndex: startBar,
       nextBarIndex: null,
@@ -307,7 +305,6 @@ function createGroups() {
       travelStartMinute: null,
       knowsHostBar: false,
       foundAtMinute: null,
-      // Current interpolated position (updated every tick for proximity checks)
       currentLat: startLat,
       currentLng: startLng,
       leafletMarker: marker,
@@ -370,23 +367,25 @@ function markFound(g, t) {
 }
 
 function depart(g, t) {
-  if (g.currentBarIndex >= BARS.length - 1) {
-    // Last bar — can't go further, just keep dwelling
-    g.dwellUntil = t + clamp(gaussianSample(Sim.meanDwell, 8), 5, 90);
-    return;
-  }
-
   let nextBar;
 
   if (g.knowsHostBar) {
+    // Tipped off — head directly to host bar (forward OR backward)
     nextBar = Sim.hostBarIndex;
-    if (nextBar <= g.currentBarIndex) {
-      // Already past host bar (started mid-route), can't backtrack — extend dwell
-      g.dwellUntil = t + 1000; // effectively stranded
+    if (nextBar === g.currentBarIndex) {
+      markFound(g, t);
       return;
     }
   } else {
-    // Sequential with optional skip (max 2 hops)
+    // Not tipped: sequential forward movement
+    if (g.currentBarIndex >= BARS.length - 1) {
+      // At last bar, no tip — dwell and chance to ask around
+      g.dwellUntil = t + clamp(gaussianSample(Sim.meanDwell, 8), 5, 90);
+      if (Math.random() < 0.15) {
+        g.knowsHostBar = true;
+      }
+      return;
+    }
     nextBar = g.currentBarIndex + 1;
     let hops = 2;
     while (hops > 0 && nextBar < BARS.length - 1 && Math.random() < Sim.skipProb) {
@@ -432,7 +431,6 @@ function resolveBarSharing() {
 
 // On walks: groups physically close to each other (passing) share info
 function resolveWalkSharing() {
-  // Only consider groups that are traveling or dwelling (not waiting, not found)
   const active = Sim.groups.filter(
     g => g.phase === 'traveling' || g.phase === 'dwelling'
   );
@@ -442,18 +440,14 @@ function resolveWalkSharing() {
       const a = active[i];
       const b = active[j];
 
-      // Skip if neither knows anything useful
       if (!a.knowsHostBar && !b.knowsHostBar) continue;
-      // Skip if both already know
       if (a.knowsHostBar && b.knowsHostBar) continue;
 
-      // Check proximity using interpolated positions
       const dlat = a.currentLat - b.currentLat;
       const dlng = a.currentLng - b.currentLng;
       const dist = Math.sqrt(dlat * dlat + dlng * dlng);
 
       if (dist < PROXIMITY_DEG) {
-        // They're passing each other — try to share info
         if (Math.random() < Sim.recogProb) {
           if (a.knowsHostBar) b.knowsHostBar = true;
           else                 a.knowsHostBar = true;
@@ -478,12 +472,10 @@ function updateMarkerPositions() {
       lng = from.lng + (to.lng - from.lng) * progress;
     } else {
       const bar = BARS[g.currentBarIndex];
-      // Small per-group jitter to visually separate co-located groups
       lat = bar.lat + (g.id % 3 - 1) * 0.00018;
       lng = bar.lng + (Math.floor(g.id / 3) % 3 - 1) * 0.00018;
     }
 
-    // Store for proximity checks
     g.currentLat = lat;
     g.currentLng = lng;
 
@@ -513,9 +505,39 @@ function updateStats() {
     document.getElementById('stat-median').textContent = '—';
   }
 
-  // Progress bar = fraction found
   const pct = total > 0 ? (found / total) * 100 : 0;
   document.getElementById('progress-bar').style.width = pct + '%';
+}
+
+// ---- Confetti Celebration ----------------------------------
+function launchCelebration() {
+  if (typeof confetti !== 'function') return;
+
+  const duration = 3000;
+  const end = Date.now() + duration;
+  const colors = ['#FFD700', '#FFA500', '#32CD32', '#FFE033', '#FF8C00'];
+
+  (function frame() {
+    confetti({
+      particleCount: 5,
+      angle: 60,
+      spread: 55,
+      origin: { x: 0 },
+      colors: colors,
+    });
+    confetti({
+      particleCount: 5,
+      angle: 120,
+      spread: 55,
+      origin: { x: 1 },
+      colors: colors,
+    });
+    if (Date.now() < end) {
+      requestAnimationFrame(frame);
+    }
+  })();
+
+  document.getElementById('app').classList.add('sim-complete');
 }
 
 // ---- Termination Check -------------------------------------
@@ -529,12 +551,18 @@ function checkTermination() {
 
   if (allFound || timedOut) {
     stopSim();
-    const msg = allFound ? '— Everyone found the host 🎉' : '— Time limit (180 min) reached';
+    const msg = allFound
+      ? '— Everyone found the host! 🍌🎉'
+      : '— Time limit (300 min) reached';
     document.getElementById('sim-status').textContent = msg;
-    document.getElementById('btn-run').textContent = '▶ Run Again';
+    document.getElementById('btn-run').textContent = '🍌 Run Again';
     document.getElementById('btn-run').disabled = false;
     updateStats();
     if (Sim.histDirty) rebuildHistogram();
+
+    if (allFound) {
+      launchCelebration();
+    }
   }
 }
 
@@ -549,34 +577,28 @@ function animLoop(timestamp) {
   }
 
   const rawMs = timestamp - Sim.lastRealTime;
-  const cappedMs = Math.min(rawMs, 33); // cap at ~2 frames to handle tab-hidden jumps
+  const cappedMs = Math.min(rawMs, 33);
   Sim.lastRealTime = timestamp;
 
   const deltaSimMin = (cappedMs / 1000) * Sim.speedMultiplier;
   Sim.simMinute += deltaSimMin;
 
-  // 1. Advance each group's state machine
   for (const g of Sim.groups) {
     updateGroup(g, Sim.simMinute);
   }
 
-  // 2. Interpolate positions first (needed for proximity check)
   updateMarkerPositions();
 
-  // 3. Resolve information sharing (bars + passing on walks)
   resolveBarSharing();
   resolveWalkSharing();
 
-  // 4. Re-color markers after info sharing may have changed state
   for (const g of Sim.groups) {
     g.leafletMarker.setStyle({ fillColor: groupColor(g) });
   }
 
-  // 5. Update UI
   updateStats();
   if (Sim.histDirty) rebuildHistogram();
 
-  // 6. Check if done
   checkTermination();
 
   if (Sim.running) {
@@ -586,7 +608,6 @@ function animLoop(timestamp) {
 
 // ---- Start / Stop / Reset ----------------------------------
 function startSim() {
-  // Read params from sliders
   Sim.totalAttendees  = parseInt(document.getElementById('attendees').value);
   Sim.numGroups       = parseInt(document.getElementById('num-groups').value);
   Sim.meanDwell       = parseInt(document.getElementById('dwell-time').value);
@@ -599,7 +620,6 @@ function startSim() {
     ? Math.floor(Math.random() * BARS.length)
     : parseInt(document.getElementById('host-bar-picker').value);
 
-  // Reset runtime state
   Sim.simMinute       = 0;
   Sim.firstDiscovery  = null;
   Sim.allFoundTime    = null;
@@ -613,8 +633,9 @@ function startSim() {
   document.getElementById('host-display-text').textContent = BARS[Sim.hostBarIndex].name;
   document.getElementById('sim-status').textContent = '— Running…';
   document.getElementById('btn-run').disabled = true;
-  document.getElementById('btn-run').textContent = '⏸ Running…';
+  document.getElementById('btn-run').textContent = '⏳ Running…';
   document.getElementById('progress-bar').style.width = '0%';
+  document.getElementById('app').classList.remove('sim-complete');
 
   createGroups();
 
@@ -641,12 +662,13 @@ function resetSim() {
   Sim.discoveryTimes  = [];
   Sim.histDirty       = false;
 
-  updateBarMarkers(-1); // no host highlighted
+  updateBarMarkers(-1);
   document.getElementById('host-display-text').textContent = '—';
   document.getElementById('sim-status').textContent = '— Ready';
-  document.getElementById('btn-run').textContent = '▶ Run';
+  document.getElementById('btn-run').textContent = '🍌 Run';
   document.getElementById('btn-run').disabled = false;
   document.getElementById('progress-bar').style.width = '0%';
+  document.getElementById('app').classList.remove('sim-complete');
 
   document.getElementById('stat-time').textContent    = '0:00';
   document.getElementById('stat-found').textContent   = '0 / 0';
@@ -660,12 +682,12 @@ function resetSim() {
 // ---- Slider Bindings ---------------------------------------
 function bindSliders() {
   const defs = [
-    { id: 'attendees',  valId: 'attendees-val', suffix: '' },
-    { id: 'num-groups', valId: 'groups-val',    suffix: '' },
-    { id: 'dwell-time', valId: 'dwell-val',     suffix: '' },
-    { id: 'skip-prob',  valId: 'skip-val',      suffix: '' },
-    { id: 'recog-prob', valId: 'recog-val',     suffix: '' },
-    { id: 'speed',      valId: 'speed-val',     suffix: '' },
+    { id: 'attendees',  valId: 'attendees-val' },
+    { id: 'num-groups', valId: 'groups-val' },
+    { id: 'dwell-time', valId: 'dwell-val' },
+    { id: 'skip-prob',  valId: 'skip-val' },
+    { id: 'recog-prob', valId: 'recog-val' },
+    { id: 'speed',      valId: 'speed-val' },
   ];
 
   for (const { id, valId } of defs) {
@@ -677,13 +699,11 @@ function bindSliders() {
     });
   }
 
-  // Speed hint
   document.getElementById('speed').addEventListener('input', (e) => {
     const spm = parseInt(e.target.value);
     document.getElementById('speed-hint').textContent = (60 / spm).toFixed(1) + 's';
   });
 
-  // Host picker toggle
   document.getElementById('random-host').addEventListener('change', (e) => {
     document.getElementById('host-bar-picker').disabled = e.target.checked;
   });
