@@ -6,8 +6,6 @@
 'use strict';
 
 // ---- Bar Data ----------------------------------------------
-// Walking times between consecutive bars estimated from Google Maps
-// (total route: 1.2 miles, 27 min walking)
 const BARS = [
   { id: 0, name: 'Victory Sandwich Bar',        lat: 33.7755, lng: -84.3401, travelToNext: 7  },
   { id: 1, name: 'Painted Park',                lat: 33.7715, lng: -84.3478, travelToNext: 8  },
@@ -23,16 +21,15 @@ const TRAVEL_TIME = Array(7).fill(null).map(() => Array(7).fill(0));
 for (let i = 0; i < 7; i++) {
   for (let j = i + 1; j < 7; j++) {
     TRAVEL_TIME[i][j] = BARS.slice(i, j).reduce((s, b) => s + b.travelToNext, 0);
-    TRAVEL_TIME[j][i] = TRAVEL_TIME[i][j]; // symmetric — enables backtracking
+    TRAVEL_TIME[j][i] = TRAVEL_TIME[i][j];
   }
 }
 
-// Proximity threshold in degrees (~130m) for detecting groups passing each other
-const PROXIMITY_DEG = 0.0012;
+// Proximity threshold in degrees (~60m) for detecting groups passing each other
+const PROXIMITY_DEG = 0.0006;
 
 // ---- Utilities ---------------------------------------------
 function gaussianSample(mean, sd) {
-  // Box-Muller transform
   let u;
   do { u = Math.random(); } while (u === 0);
   const v = Math.random();
@@ -50,36 +47,34 @@ function formatMin(m) {
   return `${Math.floor(t / 60)}h ${t % 60}m`;
 }
 
+function pickRandom(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
 // ---- Global Simulation State -------------------------------
 const Sim = {
-  // Config (populated from sliders at run time)
   totalAttendees: 30,
   numGroups: 12,
-  meanDwell: 25,
-  skipProb: 0.10,
+  meanDwell: 30,
+  skipProb: 0.15,
   recogProb: 0.75,
   hostBarIndex: null,
   speedMultiplier: 10,
 
-  // Runtime
   simMinute: 0,
   running: false,
   rafId: null,
   lastRealTime: null,
 
-  // Agents
   groups: [],
 
-  // Leaflet
   map: null,
   barMarkers: [],
 
-  // Chart.js
   histChart: null,
   histDirty: false,
   discoveryTimes: [],
 
-  // Derived stats
   firstDiscovery: null,
   allFoundTime: null,
 
@@ -97,7 +92,6 @@ function initMap() {
     minZoom: 13,
   });
 
-  // CartoDB Dark Matter — no API key required
   L.tileLayer(
     'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
     {
@@ -109,7 +103,6 @@ function initMap() {
     }
   ).addTo(Sim.map);
 
-  // Dashed route polyline — warm gold
   L.polyline(BARS.map(b => [b.lat, b.lng]), {
     color: '#FFD70066',
     weight: 3,
@@ -117,7 +110,6 @@ function initMap() {
     opacity: 0.8,
   }).addTo(Sim.map);
 
-  // Numbered bar markers (static)
   Sim.barMarkers = BARS.map((bar, i) => {
     const icon = makeBarIcon(i, false);
     const marker = L.marker([bar.lat, bar.lng], { icon, zIndexOffset: 200 })
@@ -130,11 +122,9 @@ function initMap() {
     return marker;
   });
 
-  // Fit to bar bounds with generous padding
   const bounds = L.latLngBounds(BARS.map(b => [b.lat, b.lng]));
   Sim.map.fitBounds(bounds, { padding: [60, 60] });
 
-  // Ensure tiles render after grid/flex layout settles + zoom in enough
   setTimeout(() => {
     Sim.map.invalidateSize();
     Sim.map.fitBounds(bounds, { padding: [60, 60] });
@@ -265,18 +255,30 @@ function groupColor(g) {
   return COLORS.searching;
 }
 
+// ---- Knowledge Helper --------------------------------------
+// Check if a group can deduce the host location from cleared bars
+function checkDeduction(g) {
+  if (g.knowsHostBar || g.phase === 'found') return;
+  if (g.knownClearBars.size >= BARS.length - 1) {
+    // Only one bar left — that must be the host
+    for (let i = 0; i < BARS.length; i++) {
+      if (!g.knownClearBars.has(i)) {
+        g.deducedHostBar = i;
+        g.knowsHostBar = true;
+        return;
+      }
+    }
+  }
+}
+
 // ---- Create Groups -----------------------------------------
 function createGroups() {
   const sizes = assignGroupSizes(Sim.totalAttendees, Sim.numGroups);
 
   Sim.groups = sizes.map((size, id) => {
-    // Small arrival delay for staggering (most arrive within first few minutes)
     const arrivalMinute = clamp(gaussianSample(5, 8), 0, 30);
-
-    // Uniform random starting bar across all 7 bars
     const startBar = Math.floor(Math.random() * BARS.length);
 
-    // Jitter offset so co-located groups don't stack perfectly
     const jR = (id % 3 - 1) * 0.00018;
     const jC = (Math.floor(id / 3) % 3 - 1) * 0.00018;
     const startLat = BARS[startBar].lat + jR;
@@ -300,11 +302,13 @@ function createGroups() {
       currentBarIndex: startBar,
       departureBarIndex: startBar,
       nextBarIndex: null,
-      dwellUntil: arrivalMinute + clamp(gaussianSample(Sim.meanDwell, 8), 5, 90),
+      dwellUntil: arrivalMinute + clamp(gaussianSample(Sim.meanDwell, 8), 15, 60),
       arriveAt: null,
       travelStartMinute: null,
       knowsHostBar: false,
+      deducedHostBar: null,   // set when deduced via elimination
       foundAtMinute: null,
+      knownClearBars: new Set(), // bars this group knows the host is NOT at
       currentLat: startLat,
       currentLng: startLng,
       leafletMarker: marker,
@@ -326,6 +330,11 @@ function updateGroup(g, t) {
   if (g.phase === 'waiting') {
     if (t >= g.arrivalMinute) {
       g.phase = 'dwelling';
+      // Mark starting bar as visited
+      if (g.currentBarIndex !== Sim.hostBarIndex) {
+        g.knownClearBars.add(g.currentBarIndex);
+        checkDeduction(g);
+      }
       if (g.currentBarIndex === Sim.hostBarIndex) {
         markFound(g, t);
       }
@@ -345,16 +354,39 @@ function updateGroup(g, t) {
   }
 
   if (g.phase === 'traveling') {
+    // If group deduced/learned host while traveling, redirect immediately
+    if (g.knowsHostBar && g.nextBarIndex !== getHostTarget(g)) {
+      const target = getHostTarget(g);
+      if (target !== null && target !== g.nextBarIndex) {
+        // Redirect: start traveling to host from current interpolated position
+        g.departureBarIndex = g.currentBarIndex;
+        g.nextBarIndex = target;
+        g.travelStartMinute = t;
+        // Estimate remaining travel from current position
+        g.arriveAt = t + TRAVEL_TIME[g.currentBarIndex][target];
+      }
+    }
+
     if (t >= g.arriveAt) {
       g.currentBarIndex = g.nextBarIndex;
       g.nextBarIndex = null;
       g.phase = 'dwelling';
-      g.dwellUntil = t + clamp(gaussianSample(Sim.meanDwell, 8), 5, 90);
+      g.dwellUntil = t + clamp(gaussianSample(Sim.meanDwell, 8), 15, 60);
+      // Mark this bar as visited
+      if (g.currentBarIndex !== Sim.hostBarIndex) {
+        g.knownClearBars.add(g.currentBarIndex);
+        checkDeduction(g);
+      }
       if (g.currentBarIndex === Sim.hostBarIndex) {
         markFound(g, t);
       }
     }
   }
+}
+
+function getHostTarget(g) {
+  if (g.deducedHostBar !== null) return g.deducedHostBar;
+  return Sim.hostBarIndex;
 }
 
 function markFound(g, t) {
@@ -366,31 +398,54 @@ function markFound(g, t) {
   if (Sim.firstDiscovery === null) Sim.firstDiscovery = t;
 }
 
+// ---- Movement Logic ----------------------------------------
+// Pick next bar: prefer adjacent uncleared, with skip chance
+function chooseNextBar(g) {
+  const cur = g.currentBarIndex;
+  const allBars = Array.from({ length: BARS.length }, (_, i) => i);
+
+  // Bars we haven't cleared (host might be there)
+  const unclearedBars = allBars.filter(i => i !== cur && !g.knownClearBars.has(i));
+
+  // If no uncleared bars left, something went wrong — just stay
+  if (unclearedBars.length === 0) return null;
+
+  // 15% chance to skip adjacent and pick uniformly from all uncleared
+  if (Math.random() < Sim.skipProb) {
+    return pickRandom(unclearedBars);
+  }
+
+  // Adjacent bars (cur-1, cur+1) that exist and aren't cleared
+  const adjacent = [];
+  if (cur > 0 && !g.knownClearBars.has(cur - 1)) adjacent.push(cur - 1);
+  if (cur < BARS.length - 1 && !g.knownClearBars.has(cur + 1)) adjacent.push(cur + 1);
+
+  if (adjacent.length > 0) {
+    // Pick randomly between available adjacent uncleared bars
+    return pickRandom(adjacent);
+  }
+
+  // Both adjacent are cleared (or at edge) — go to nearest uncleared bar
+  unclearedBars.sort((a, b) => Math.abs(a - cur) - Math.abs(b - cur));
+  return unclearedBars[0];
+}
+
 function depart(g, t) {
   let nextBar;
 
   if (g.knowsHostBar) {
-    // Tipped off — head directly to host bar (forward OR backward)
-    nextBar = Sim.hostBarIndex;
+    // Know exact host location — beeline there (after finishing drink)
+    nextBar = getHostTarget(g);
     if (nextBar === g.currentBarIndex) {
       markFound(g, t);
       return;
     }
   } else {
-    // Not tipped: sequential forward movement
-    if (g.currentBarIndex >= BARS.length - 1) {
-      // At last bar, no tip — dwell and chance to ask around
-      g.dwellUntil = t + clamp(gaussianSample(Sim.meanDwell, 8), 5, 90);
-      if (Math.random() < 0.15) {
-        g.knowsHostBar = true;
-      }
+    nextBar = chooseNextBar(g);
+    if (nextBar === null) {
+      // All bars cleared but no host found? Shouldn't happen, but dwell as fallback
+      g.dwellUntil = t + clamp(gaussianSample(Sim.meanDwell, 8), 15, 60);
       return;
-    }
-    nextBar = g.currentBarIndex + 1;
-    let hops = 2;
-    while (hops > 0 && nextBar < BARS.length - 1 && Math.random() < Sim.skipProb) {
-      nextBar++;
-      hops--;
     }
   }
 
@@ -403,7 +458,7 @@ function depart(g, t) {
 
 // ---- Information Sharing -----------------------------------
 
-// At bars: groups in same bar who are dwelling share info
+// At bars: groups dwelling at the same bar share knowledge
 function resolveBarSharing() {
   const atBar = {};
   for (const g of Sim.groups) {
@@ -417,19 +472,24 @@ function resolveBarSharing() {
   for (const b in atBar) {
     const here = atBar[b];
     if (here.length < 2) continue;
-    const anyKnows = here.some(g => g.knowsHostBar || g.phase === 'found');
-    if (!anyKnows) continue;
-    for (const g of here) {
-      if (g.phase !== 'found' && !g.knowsHostBar) {
-        if (Math.random() < Sim.recogProb) {
-          g.knowsHostBar = true;
-        }
+
+    // For each pair, check recognition and share info
+    for (let i = 0; i < here.length; i++) {
+      for (let j = i + 1; j < here.length; j++) {
+        const a = here[i];
+        const bGroup = here[j];
+
+        // Recognition check — do they know each other?
+        if (Math.random() >= Sim.recogProb) continue;
+
+        // Share cleared bars (both directions)
+        shareKnowledge(a, bGroup);
       }
     }
   }
 }
 
-// On walks: groups physically close to each other (passing) share info
+// On walks: groups physically close share knowledge
 function resolveWalkSharing() {
   const active = Sim.groups.filter(
     g => g.phase === 'traveling' || g.phase === 'dwelling'
@@ -440,21 +500,43 @@ function resolveWalkSharing() {
       const a = active[i];
       const b = active[j];
 
-      if (!a.knowsHostBar && !b.knowsHostBar) continue;
-      if (a.knowsHostBar && b.knowsHostBar) continue;
-
       const dlat = a.currentLat - b.currentLat;
       const dlng = a.currentLng - b.currentLng;
       const dist = Math.sqrt(dlat * dlat + dlng * dlng);
 
       if (dist < PROXIMITY_DEG) {
         if (Math.random() < Sim.recogProb) {
-          if (a.knowsHostBar) b.knowsHostBar = true;
-          else                 a.knowsHostBar = true;
+          shareKnowledge(a, b);
         }
       }
     }
   }
+}
+
+// Share all knowledge between two groups
+function shareKnowledge(a, b) {
+  // If either has found the host or knows exact location, share that
+  if (a.phase === 'found' || a.knowsHostBar) {
+    if (!b.knowsHostBar && b.phase !== 'found') {
+      b.knowsHostBar = true;
+      b.deducedHostBar = Sim.hostBarIndex;
+    }
+  }
+  if (b.phase === 'found' || b.knowsHostBar) {
+    if (!a.knowsHostBar && a.phase !== 'found') {
+      a.knowsHostBar = true;
+      a.deducedHostBar = Sim.hostBarIndex;
+    }
+  }
+
+  // Share cleared bars — union both sets
+  const unionClear = new Set([...a.knownClearBars, ...b.knownClearBars]);
+  a.knownClearBars = new Set(unionClear);
+  b.knownClearBars = new Set(unionClear);
+
+  // Check if either can now deduce the host location
+  checkDeduction(a);
+  checkDeduction(b);
 }
 
 // ---- Marker Position Interpolation -------------------------

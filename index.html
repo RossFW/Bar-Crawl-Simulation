@@ -58,13 +58,13 @@
           <h3>🎲 Behavior</h3>
 
           <label>
-            Mean Drink Time <span class="val" id="dwell-val">25</span> min
-            <input type="range" id="dwell-time" min="5" max="60" value="25" />
+            Mean Drink Time <span class="val" id="dwell-val">30</span> min
+            <input type="range" id="dwell-time" min="15" max="60" value="30" />
           </label>
 
           <label>
-            Skip-a-Bar Chance <span class="val" id="skip-val">10</span>%
-            <input type="range" id="skip-prob" min="0" max="50" value="10" />
+            Skip-a-Bar Chance <span class="val" id="skip-val">15</span>%
+            <input type="range" id="skip-prob" min="0" max="50" value="15" />
           </label>
 
           <label>
@@ -184,12 +184,12 @@
               <details>
                 <summary>Model Assumptions</summary>
                 <ol>
-                  <li>Groups travel bar 1 → 7, but can backtrack if tipped off that the host is behind them.</li>
-                  <li>Groups start spread across the first few bars of the route.</li>
-                  <li>Dwell time ~ Normal(mean, σ=8 min), min 5 min.</li>
-                  <li>At each departure, ~skip% chance to jump an extra bar (max 2).</li>
-                  <li>Info shared when two+ groups are dwelling at the same bar simultaneously.</li>
-                  <li>Once tipped off, a group walks directly to host bar (skips everything in between).</li>
+                  <li>Groups start at a random bar and prefer visiting adjacent uncleared bars.</li>
+                  <li>15% chance per departure to skip adjacent and pick any uncleared bar.</li>
+                  <li>Dwell time ~ Normal(mean, σ=8 min), clamped to [15, 60] min.</li>
+                  <li>Groups share which bars they've cleared when they recognize each other.</li>
+                  <li>If a group clears 6 of 7 bars, they deduce the host's location.</li>
+                  <li>Once tipped/deduced, a group finishes their drink then beelines to host.</li>
                   <li>Host is stationary at one bar for the full simulation.</li>
                   <li>Groups never split or merge.</li>
                   <li>Simulation ends at 300 min or when all groups are found.</li>
