@@ -132,6 +132,9 @@ function initMap() {
   // Fit to bar bounds with padding
   const bounds = L.latLngBounds(BARS.map(b => [b.lat, b.lng]));
   Sim.map.fitBounds(bounds, { padding: [50, 50] });
+
+  // Ensure tiles render after grid/flex layout settles
+  setTimeout(() => { Sim.map.invalidateSize(); Sim.map.fitBounds(bounds, { padding: [50, 50] }); }, 200);
 }
 
 function makeBarIcon(idx, isHost) {
