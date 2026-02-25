@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Where's the Host? 🍌 Banana Beltline Bar Crawl</title>
+  <title>Banana Beltline Bar Crawl 🍌</title>
 
   <!-- Google Fonts — Fredoka for playful headings, Inter for body -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -30,93 +30,61 @@
       <span class="subtitle">Banana Beltline Bar Crawl · Inman Park → OFW · 7 bars · 1.2 mi</span>
     </header>
 
-    <!-- Main grid: sidebar + content -->
+    <!-- ======== Event Info ======== -->
+    <section id="event-info">
+
+      <div id="event-hero">
+        <h2>🍌 Banana Beltline Bar Crawl</h2>
+        <p class="event-datetime">Saturday, February 28 &middot; 3:00 PM</p>
+        <p class="event-route-summary">Atlanta Beltline &middot; Inman Park &rarr; Old Fourth Ward &middot; 7 Bars &middot; 1.2 mi</p>
+      </div>
+
+      <div id="event-cards">
+
+        <div class="event-card">
+          <h3>How It Works</h3>
+          <p>The host hides at one of 7 bars along the Beltline. Groups search bar to bar looking for them.</p>
+          <p>If the host isn't at your bar, <strong>grab a drink</strong> before moving on.</p>
+          <p>Find the banana = <strong>free drinks</strong> from the group tab!</p>
+        </div>
+
+        <div class="event-card">
+          <h3>The Route</h3>
+          <ol class="route-list">
+            <li><strong>Victory Sandwich Bar</strong> <span class="route-addr">913 Bernina Ave NE</span></li>
+            <li><strong>Painted Park</strong> <span class="route-addr">240 N Highland Ave NE</span></li>
+            <li><strong>Ladybird Grove &amp; Mess Hall</strong> <span class="route-addr">684 John Wesley Dobbs Ave NE Unit J</span></li>
+            <li><strong>Brewdog Atlanta</strong> <span class="route-addr">112 Krog St NE</span></li>
+            <li><strong>Pour Taproom-Beltline</strong> <span class="route-addr">661 Auburn Ave NE</span></li>
+            <li><strong>Guac y Margys</strong> <span class="route-addr">661 Auburn Ave NE #120</span></li>
+            <li><strong>Duke's Hideaway at McCray's</strong> <span class="route-addr">670 DeKalb Ave NE Suite 101</span></li>
+          </ol>
+        </div>
+
+        <div class="event-card">
+          <h3>Play the Game</h3>
+          <p><strong>$30 to play</strong> &mdash; goes into the group tab. Check your invite for payment details.</p>
+          <p>You're welcome to just crawl socially for free.</p>
+          <p>Recommended to go in groups. Text Ross if you need a group or have formed one.</p>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ======== Simulation ======== -->
     <div id="main-layout">
 
       <!-- ======== Left Sidebar: Controls ======== -->
       <aside id="controls">
 
-        <!-- Attendees -->
-        <div class="control-group">
-          <h3>🍻 Attendees</h3>
-
-          <label>
-            Total Attendees <span class="val" id="attendees-val">30</span>
-            <input type="range" id="attendees" min="4" max="80" value="30" />
-          </label>
-
-          <label>
-            Number of Groups <span class="val" id="groups-val">12</span>
-            <input type="range" id="num-groups" min="2" max="25" value="12" />
-          </label>
-
-          <p class="hint">Avg group size: <span id="avg-size">2.5</span> people</p>
-        </div>
-
-        <!-- Behavior -->
-        <div class="control-group">
-          <h3>🎲 Behavior</h3>
-
-          <label>
-            Mean Drink Time <span class="val" id="dwell-val">30</span> min
-            <input type="range" id="dwell-time" min="15" max="60" value="30" />
-          </label>
-
-          <label>
-            Skip-a-Bar Chance <span class="val" id="skip-val">15</span>%
-            <input type="range" id="skip-prob" min="0" max="50" value="15" />
-          </label>
-
-          <label>
-            Recognition Rate <span class="val" id="recog-val">75</span>%
-            <input type="range" id="recog-prob" min="0" max="100" value="75" />
-          </label>
-          <p class="hint">Chance two groups recognize each other &amp; share intel (at bars or passing on walks)</p>
-        </div>
-
-        <!-- Host Location -->
-        <div class="control-group">
-          <h3>📍 Host Location</h3>
-
-          <div class="checkbox-row">
-            <input type="checkbox" id="random-host" checked />
-            <label for="random-host" style="margin:0;cursor:pointer;">Randomize each run</label>
-          </div>
-
-          <select id="host-bar-picker" disabled>
-            <option value="0">1. Victory Sandwich Bar</option>
-            <option value="1">2. Painted Park</option>
-            <option value="2">3. Ladybird Grove &amp; Mess Hall</option>
-            <option value="3">4. Brewdog Atlanta</option>
-            <option value="4">5. Pour Taproom-Beltline</option>
-            <option value="5">6. Guac y Margys</option>
-            <option value="6">7. Duke's Hideaway at McCray's</option>
-          </select>
-
-          <p class="hint" style="margin-top:8px;">
-            Hiding at: <strong id="host-display-text">—</strong>
-          </p>
-        </div>
-
-        <!-- Speed -->
-        <div class="control-group">
-          <h3>⚡ Animation Speed</h3>
-
-          <label>
-            Speed <span class="val" id="speed-val">10</span>× real time
-            <input type="range" id="speed" min="1" max="60" value="10" />
-          </label>
-
-          <p class="hint">1 sim-min = <span id="speed-hint">6.0</span>s real</p>
-        </div>
-
-        <!-- Buttons -->
+        <!-- Buttons — always visible at top -->
         <div id="run-controls">
           <button class="btn-primary" id="btn-run">🍌 Run</button>
           <button class="btn-secondary" id="btn-reset">🔄 Reset</button>
         </div>
 
-        <!-- Stats -->
+        <!-- Stats — always visible -->
         <div id="stats-panel">
           <h3>📊 Live Stats</h3>
           <div class="stat-row">
@@ -145,6 +113,87 @@
           </div>
         </div>
 
+        <!-- Collapsible Settings -->
+        <details id="sim-settings">
+          <summary>Simulation Settings</summary>
+
+          <div class="control-group">
+            <h3>🍻 Attendees</h3>
+            <label>
+              Total Attendees <span class="val" id="attendees-val">30</span>
+              <input type="range" id="attendees" min="4" max="80" value="30" />
+            </label>
+            <label>
+              Number of Groups <span class="val" id="groups-val">12</span>
+              <input type="range" id="num-groups" min="2" max="25" value="12" />
+            </label>
+            <p class="hint">Avg group size: <span id="avg-size">2.5</span> people</p>
+          </div>
+
+          <div class="control-group">
+            <h3>🎲 Behavior</h3>
+            <label>
+              Mean Drink Time <span class="val" id="dwell-val">30</span> min
+              <input type="range" id="dwell-time" min="15" max="60" value="30" />
+            </label>
+            <label>
+              Skip-a-Bar Chance <span class="val" id="skip-val">15</span>%
+              <input type="range" id="skip-prob" min="0" max="50" value="15" />
+            </label>
+            <label>
+              Recognition Rate <span class="val" id="recog-val">75</span>%
+              <input type="range" id="recog-prob" min="0" max="100" value="75" />
+            </label>
+            <p class="hint">Chance two groups recognize each other &amp; share intel (at bars or passing on walks)</p>
+          </div>
+
+          <div class="control-group">
+            <h3>📍 Host Location</h3>
+            <div class="checkbox-row">
+              <input type="checkbox" id="random-host" checked />
+              <label for="random-host" style="margin:0;cursor:pointer;">Randomize each run</label>
+            </div>
+            <select id="host-bar-picker" disabled>
+              <option value="0">1. Victory Sandwich Bar</option>
+              <option value="1">2. Painted Park</option>
+              <option value="2">3. Ladybird Grove &amp; Mess Hall</option>
+              <option value="3">4. Brewdog Atlanta</option>
+              <option value="4">5. Pour Taproom-Beltline</option>
+              <option value="5">6. Guac y Margys</option>
+              <option value="6">7. Duke's Hideaway at McCray's</option>
+            </select>
+            <p class="hint" style="margin-top:8px;">
+              Hiding at: <strong id="host-display-text">—</strong>
+            </p>
+          </div>
+
+          <div class="control-group">
+            <h3>⚡ Animation Speed</h3>
+            <label>
+              Speed <span class="val" id="speed-val">10</span>× real time
+              <input type="range" id="speed" min="1" max="60" value="10" />
+            </label>
+            <p class="hint">1 sim-min = <span id="speed-hint">6.0</span>s real</p>
+          </div>
+
+          <div class="control-group">
+            <h3>📐 Model Assumptions</h3>
+            <ol class="assumptions-list">
+              <li>Groups start at a random bar and prefer visiting adjacent uncleared bars.</li>
+              <li>15% chance per departure to skip adjacent and pick any uncleared bar.</li>
+              <li>Dwell time ~ Normal(mean, σ=8 min), clamped to [15, 60] min.</li>
+              <li>Groups share which bars they've cleared when they recognize each other.</li>
+              <li>If a group clears 6 of 7 bars, they deduce the host's location.</li>
+              <li>Once tipped/deduced, a group finishes their drink then beelines to host.</li>
+              <li>Host is stationary at one bar for the full simulation.</li>
+              <li>Groups never split or merge.</li>
+              <li>Simulation ends at 300 min or when all groups are found.</li>
+              <li>Walking times between bars are fixed estimates from Google Maps.</li>
+            </ol>
+          </div>
+
+        </details>
+
       </aside><!-- end #controls -->
 
       <!-- ======== Right Content: Map + Charts ======== -->
@@ -153,7 +202,7 @@
         <!-- Leaflet map -->
         <div id="map-container"></div>
 
-        <!-- Bottom: charts + legend + assumptions -->
+        <!-- Bottom: charts + legend -->
         <div id="bottom-panel">
 
           <div id="charts-col">
@@ -173,7 +222,6 @@
           </div>
 
           <div id="right-col">
-
             <div id="legend">
               <h3>Legend</h3>
               <div class="legend-item">
@@ -192,26 +240,7 @@
                 <span class="dot dot-host"></span> Host bar
               </div>
             </div>
-
-            <div id="assumptions">
-              <details>
-                <summary>Model Assumptions</summary>
-                <ol>
-                  <li>Groups start at a random bar and prefer visiting adjacent uncleared bars.</li>
-                  <li>15% chance per departure to skip adjacent and pick any uncleared bar.</li>
-                  <li>Dwell time ~ Normal(mean, σ=8 min), clamped to [15, 60] min.</li>
-                  <li>Groups share which bars they've cleared when they recognize each other.</li>
-                  <li>If a group clears 6 of 7 bars, they deduce the host's location.</li>
-                  <li>Once tipped/deduced, a group finishes their drink then beelines to host.</li>
-                  <li>Host is stationary at one bar for the full simulation.</li>
-                  <li>Groups never split or merge.</li>
-                  <li>Simulation ends at 300 min or when all groups are found.</li>
-                  <li>Walking times between bars are fixed estimates from Google Maps.</li>
-                </ol>
-              </details>
-            </div>
-
-          </div><!-- end #right-col -->
+          </div>
 
         </div><!-- end #bottom-panel -->
 

@@ -65,6 +65,99 @@ header .subtitle {
   box-shadow: 0 0 8px #FFD70066;
 }
 
+/* ---- Event Info Section ---- */
+#event-info {
+  padding: 32px 24px 24px;
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+#event-hero {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+#event-hero h2 {
+  font-family: 'Fredoka', 'Inter', system-ui, sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #FFD700;
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+}
+
+.event-datetime {
+  font-size: 1.1rem;
+  color: #e8dfd0;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.event-route-summary {
+  font-size: 0.9rem;
+  color: #b8a080;
+  font-weight: 500;
+}
+
+#event-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.event-card {
+  background: #1f1a28;
+  border: 1px solid #3d2e20;
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.event-card h3 {
+  font-family: 'Fredoka', 'Inter', system-ui, sans-serif;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #FFD700;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.event-card p {
+  font-size: 0.88rem;
+  color: #c4b8a8;
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.event-card p:last-child {
+  margin-bottom: 0;
+}
+
+.route-list {
+  padding-left: 20px;
+  list-style: decimal;
+}
+
+.route-list li {
+  font-size: 0.85rem;
+  color: #c4b8a8;
+  margin-bottom: 6px;
+  line-height: 1.5;
+}
+
+.route-list li strong {
+  color: #e8dfd0;
+}
+
+.route-addr {
+  display: block;
+  font-size: 0.75rem;
+  color: #8a7a6a;
+  margin-top: 1px;
+}
+
+/* ---- Simulation Layout ---- */
 #main-layout {
   display: grid;
   grid-template-columns: 290px 1fr;
@@ -448,19 +541,14 @@ select:disabled { opacity: 0.35; cursor: not-allowed; }
 .dot-found     { background: #32CD32; }
 .dot-host      { background: #FF4444; border-radius: 3px; }
 
-/* Assumptions */
-#assumptions {
-  background: #241e18;
-  border: 1px solid #2d2420;
-  border-radius: 8px;
-  padding: 12px;
-  flex: 1;
-  overflow-y: auto;
+/* ---- Collapsible Sim Settings ---- */
+#sim-settings {
+  margin-top: 4px;
 }
 
-details summary {
+#sim-settings > summary {
   font-family: 'Fredoka', 'Inter', system-ui, sans-serif;
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: #8a7a6a;
@@ -469,23 +557,35 @@ details summary {
   font-weight: 600;
   outline: none;
   list-style: none;
+  padding: 10px 0;
+  border-bottom: 1px solid #2d2420;
+  transition: color 0.15s;
 }
 
-details summary::-webkit-details-marker { display: none; }
+#sim-settings > summary:hover {
+  color: #FFD700;
+}
 
-details summary::before {
+#sim-settings > summary::-webkit-details-marker { display: none; }
+
+#sim-settings > summary::before {
   content: '▸ ';
   font-size: 0.6rem;
 }
 
-details[open] summary::before { content: '▾ '; }
+#sim-settings[open] > summary::before { content: '▾ '; }
 
-details ol {
-  padding-left: 18px;
-  margin-top: 10px;
+#sim-settings[open] > summary {
+  margin-bottom: 4px;
 }
 
-details li {
+/* Assumptions list inside settings */
+.assumptions-list {
+  padding-left: 18px;
+  margin-top: 4px;
+}
+
+.assumptions-list li {
   font-size: 0.72rem;
   color: #8a7a6a;
   margin-bottom: 5px;
@@ -566,6 +666,32 @@ details li {
     font-size: 0.7rem;
   }
 
+  /* Event info: stack cards vertically */
+  #event-info {
+    padding: 24px 14px 20px;
+  }
+
+  #event-hero h2 {
+    font-size: 1.5rem;
+  }
+
+  .event-datetime {
+    font-size: 1rem;
+  }
+
+  .event-route-summary {
+    font-size: 0.82rem;
+  }
+
+  #event-cards {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .event-card {
+    padding: 16px;
+  }
+
   /* Main layout: single column, natural flow */
   #main-layout {
     grid-template-columns: 1fr;
@@ -642,7 +768,7 @@ details li {
     min-height: 140px;
   }
 
-  /* Right col (legend + assumptions): full width, side by side */
+  /* Right col (legend): full width */
   #right-col {
     width: 100%;
     flex-direction: row;
@@ -650,10 +776,6 @@ details li {
   }
 
   #legend {
-    flex: 1;
-  }
-
-  #assumptions {
     flex: 1;
   }
 
@@ -687,6 +809,14 @@ details li {
 
   header .subtitle {
     font-size: 0.62rem;
+  }
+
+  #event-hero h2 {
+    font-size: 1.25rem;
+  }
+
+  .event-datetime {
+    font-size: 0.9rem;
   }
 
   #right-col {
