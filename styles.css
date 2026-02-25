@@ -136,7 +136,7 @@ header .subtitle {
 
 .route-list {
   padding-left: 20px;
-  list-style: decimal;
+  list-style: disc;
 }
 
 .route-list li {
