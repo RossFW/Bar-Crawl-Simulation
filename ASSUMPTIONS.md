@@ -19,7 +19,7 @@ Agent-based model (ABM) simulating a bar crawl scavenger hunt along Atlanta's Be
 | 4 | Brewdog Atlanta | 2 min |
 | 5 | Pour Taproom-Beltline | 1 min |
 | 6 | Guac y Margys | 2 min |
-| 7 | Duke's Hideaway at McCray's | — |
+| 7 | McCray's Tavern | — |
 
 **Total walking time end-to-end: 27 minutes**
 

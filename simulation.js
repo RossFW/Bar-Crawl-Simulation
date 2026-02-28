@@ -13,7 +13,7 @@ const BARS = [
   { id: 3, name: 'Brewdog Atlanta',             lat: 33.7519, lng: -84.3639, travelToNext: 2  },
   { id: 4, name: 'Pour Taproom-Beltline',       lat: 33.7498, lng: -84.3647, travelToNext: 1  },
   { id: 5, name: 'Guac y Margys',               lat: 33.7492, lng: -84.3650, travelToNext: 2  },
-  { id: 6, name: "Duke's Hideaway at McCray's", lat: 33.7462, lng: -84.3658, travelToNext: 0  },
+  { id: 6, name: "McCray's Tavern", lat: 33.7462, lng: -84.3658, travelToNext: 0  },
 ];
 
 // Precompute cumulative walking time between any two bars (both directions)
